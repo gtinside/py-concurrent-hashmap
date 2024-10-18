@@ -19,3 +19,4 @@ def main(runner):
 if __name__ == '__main__':
     runner = pyperf.Runner()
     main(runner)
+

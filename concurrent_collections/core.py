@@ -1,41 +1,48 @@
 import hashlib
 import loguru
-from threading import RLock
+from threading import Lock
 
 class ConcurrentHashMap:
     def __init__(self, capacity=20) -> None:
-        # each bucket is a dictionary and has an associated lock
+        # each bucket is a dictionary and has an associated readf write lock
         self.capacity = capacity
         self.buckets = [dict() for _ in range(capacity)]
-        self.locks = [RLock() for _ in range(capacity)]
+        self.locks = [Lock() for _ in range(capacity)]
+        self.elem_counter = [0]*capacity
 
     def put(self, key, value):
         bucket_num = self.hash(key) % self.capacity
         with self.locks[bucket_num]:
             self.buckets[bucket_num][key] = value
+            self.elem_counter[bucket_num]+=1
             return value
         
     def get(self, key):
         bucket_num = self.hash(key) % self.capacity
         with self.locks[bucket_num]:
-            return self.buckets[bucket_num][key]
+            if key in self.buckets[bucket_num]:
+                return self.buckets[bucket_num]
+            return None
 
-    def containsKey(self, key) -> bool:
+    def contains_key(self, key) -> bool:
         bucket_num = self.hash(key) % self.capacity
-        return key in self.buckets[bucket_num]
+        with self.locks[bucket_num]:
+            if key in self.buckets[bucket_num]:
+                return self.buckets[bucket_num]
+            return None
+    
+    def remove(self, key):
+        bucket_num = self.hash(key) % self.capacity
+        with self.locks[bucket_num]:
+            if key in self.buckets[bucket_num]:
+                self.buckets[bucket_num].remove(key)
+                self.elem_counter[bucket_num]-=1
+                return key
+            return None
 
     def hash(self, key:str):
-        """ Function to generate an md5 hash
-        
-        Parameters:
-        key (str): Key that needs to be hashed
-
-        Returns:
-        str: Hex digest
-        
-        """
-        return int(hashlib.md5(key.encode('utf-8')).hexdigest(), base=16)
+        return hash(key)
     
     def __len__(self):
-        return sum(len(bucket.keys()) for bucket in self.buckets)
+        return sum(self.elem_counter)
 
