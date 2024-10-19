@@ -52,10 +52,12 @@ class ConcurrentHashMap:
                 local_set.update(self.buckets[bucket_num].keys())
         return local_set
 
-
-        
-
-
+    def values(self):
+        local_values = list()
+        for bucket_num in range(len(self.buckets)):
+            with self.locks[bucket_num]:
+                local_values.extend(self.buckets[bucket_num].values())
+        return local_values
 
     def hash(self, key:str):
         return hash(key)
