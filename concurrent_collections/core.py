@@ -1,5 +1,3 @@
-import hashlib
-import loguru
 from threading import Lock
 
 class ConcurrentHashMap:
@@ -39,6 +37,25 @@ class ConcurrentHashMap:
                 self.elem_counter[bucket_num]-=1
                 return key
             return None
+    
+    def clear(self, key):
+        for bucket_num in range(len(self.buckets)):
+            with self.locks[bucket_num]:
+                self.buckets[bucket_num].clear()
+                self.elem_counter[bucket_num] = 0
+        return True
+    
+    def key_set(self):
+        local_set = set()
+        for bucket_num in range(len(self.buckets)):
+            with self.locks[bucket_num]:
+                local_set.update(self.buckets[bucket_num].keys())
+        return local_set
+
+
+        
+
+
 
     def hash(self, key:str):
         return hash(key)
