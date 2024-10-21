@@ -8,7 +8,7 @@ The `ConcurrentHashMap` is a thread-safe implementation of a hash map in Python.
 
 - **Thread Safety**: Ensures safe concurrent access with the use of locks.
 - **Scalable**: Uses fine-grained locks, meaning that only the bucket corresponding to a key is locked during operations, allowing for parallelism.
-- **Basic Operations**: Supports typical hash map operations such as `put`, `get`, `contains_key`, `remove`, and checking the size with `__len__`.
+- **Basic Operations**: Supports typical hash map operations such as `put`, `get`, `contains_key`, `remove`, `clear`, `key_set`, `values` and checking the size with `__len__`.
 
 
 ### Benchmarks
