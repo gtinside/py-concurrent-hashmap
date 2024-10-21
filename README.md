@@ -20,7 +20,7 @@ The `ConcurrentHashMap` is a thread-safe implementation of a hash map in Python.
 You can initialize the `ConcurrentHashMap` with a specific capacity (number of buckets). If no capacity is provided, the default value is 20.
 
 ```python
-from concurrent_hash_map import ConcurrentHashMap
+from concurrent_collections.core import ConcurrentHashMap
 
 # Initialize the map with default capacity
 concurrent_map = ConcurrentHashMap()
