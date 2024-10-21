@@ -29,7 +29,7 @@ class TestConcurrentHashMap(unittest.TestCase):
         # Test removing a key
         self.map.put('key3', 'value3')
         result = self.map.remove('key3')
-        self.assertEqual(result, 'key3')
+        self.assertEqual(result, 'value3')
         self.assertIsNone(self.map.get('key3'))
 
     def test_clear(self):

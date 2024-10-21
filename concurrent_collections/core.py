@@ -33,9 +33,9 @@ class ConcurrentHashMap:
         bucket_num = self.hash(key) % self.capacity
         with self.locks[bucket_num]:
             if key in self.buckets[bucket_num]:
-                self.buckets[bucket_num].remove(key)
+                value = self.buckets[bucket_num].pop(key)
                 self.elem_counter[bucket_num]-=1
-                return key
+                return value
             return None
     
     def clear(self, key):

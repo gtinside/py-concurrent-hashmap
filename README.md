@@ -29,6 +29,12 @@ concurrent_map = ConcurrentHashMap(capacity=50)
 To use this project, simply clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/concurrent-hash-map.git
-cd concurrent-hash-map
+git clone https://github.com/gtinside/py-concurrent-hashmap.git
+cd py-concurrent-hashmap
+```
+
+### Testing
+Run the following command to execute test cases
+```bash
+python -m unittest test/test_concurrent_hash_map.py
 ```
