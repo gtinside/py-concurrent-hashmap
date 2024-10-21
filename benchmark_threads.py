@@ -1,90 +1,97 @@
 import time
-from threading import Thread
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+from threading import Thread
 from concurrent_collections.core import ConcurrentHashMap
 
-# Assuming ConcurrentHashMap is imported
-
 def benchmark_map(map_instance, num_threads, num_operations):
-    """Benchmark throughput and latency for the concurrent map."""
-    latencies = []
-    throughput = 0
+    write_latencies = []
+    read_latencies = []
 
-    def worker(start, end):
-        nonlocal throughput
-        for i in range(start, end):
-            start_time = time.time()
-            map_instance.put(f'key{i}', f'value{i}')
-            end_time = time.time()
+    def worker(thread_id, num_ops):
+        local_write_latencies = []
+        local_read_latencies = []
+        for i in range(num_ops):
+            key = f'key{thread_id}_{i}'
+            
+            start_time = time.perf_counter()
+            map_instance.put(key, f'value{i}')
+            end_time = time.perf_counter()
+            local_write_latencies.append(end_time - start_time)
 
-            # Record latency for each operation
-            latencies.append(end_time - start_time)
-            throughput += 1
+            start_time = time.perf_counter()
+            map_instance.get(key)
+            end_time = time.perf_counter()
+            local_read_latencies.append(end_time - start_time)
+        
+        write_latencies.extend(local_write_latencies)
+        read_latencies.extend(local_read_latencies)
 
-    # Create and start threads
     threads = []
-    operations_per_thread = num_operations // num_threads
+    ops_per_thread = num_operations // num_threads
+
+    start_time = time.perf_counter()
     for i in range(num_threads):
-        t = Thread(target=worker, args=(i * operations_per_thread, (i + 1) * operations_per_thread))
+        t = Thread(target=worker, args=(i, ops_per_thread))
         threads.append(t)
-
-    start_benchmark = time.time()
-
-    # Start all threads
-    for t in threads:
         t.start()
 
-    # Wait for all threads to finish
     for t in threads:
         t.join()
+    end_time = time.perf_counter()
 
-    end_benchmark = time.time()
+    total_time = end_time - start_time
+    avg_write_latency = np.mean(write_latencies)
+    avg_read_latency = np.mean(read_latencies)
 
-    # Calculate average latency and total throughput
-    avg_latency = np.mean(latencies)
-    total_throughput = throughput / (end_benchmark - start_benchmark)
+    print(f"Threads: {num_threads}, Total time: {total_time:.6f} s, "
+          f"Avg write: {avg_write_latency:.9f} s, Avg read: {avg_read_latency:.9f} s")
 
-    return avg_latency, total_throughput
+    return avg_write_latency, avg_read_latency, total_time
 
-
-def run_benchmark():
-    thread_counts = [1, 2, 4, 8, 16, 32]
-    num_operations = 10000
-
-    latencies = []
-    throughputs = []
+def run_benchmarks():
+    thread_counts = [1, 5, 10, 15, 20, 25, 30]
+    num_operations = 100000
+    
+    write_latencies = []
+    read_latencies = []
+    total_times = []
 
     for num_threads in thread_counts:
-        print(f"Running benchmark with {num_threads} threads...")
         map_instance = ConcurrentHashMap(capacity=500)
-        avg_latency, total_throughput = benchmark_map(map_instance, num_threads, num_operations)
-        latencies.append(avg_latency)
-        throughputs.append(total_throughput)
+        write_latency, read_latency, total_time = benchmark_map(map_instance, num_threads, num_operations)
+        write_latencies.append(write_latency)
+        read_latencies.append(read_latency)
+        total_times.append(total_time)
 
-    # Plot the results
-    plot_results(thread_counts, latencies, throughputs)
+    return thread_counts, write_latencies, read_latencies, total_times
 
+def plot_results(thread_counts, write_latencies, read_latencies, total_times):
+    plt.figure(figsize=(12, 8))
 
-def plot_results(thread_counts, latencies, throughputs):
-    fig, ax1 = plt.subplots()
+    # Convert latencies to microseconds for better readability
+    write_latencies_us = [l * 1e6 for l in write_latencies]
+    read_latencies_us = [l * 1e6 for l in read_latencies]
 
-    color = 'tab:red'
-    ax1.set_xlabel('Number of Threads')
-    ax1.set_ylabel('Average Latency (seconds)', color=color)
-    ax1.plot(thread_counts, latencies, color=color, marker='o', label='Latency')
-    ax1.tick_params(axis='y', labelcolor=color)
+    plt.subplot(2, 1, 1)
+    plt.plot(thread_counts, write_latencies_us, 'bo-', label='Write Latency')
+    plt.plot(thread_counts, read_latencies_us, 'ro-', label='Read Latency')
+    plt.ylabel('Average Latency (microseconds)')
+    plt.title('ConcurrentHashMap Read and Write Latencies')
+    plt.legend()
+    plt.grid(True)
 
-    ax2 = ax1.twinx()  # instantiate a second y-axis
-    color = 'tab:blue'
-    ax2.set_ylabel('Throughput (operations/sec)', color=color)  # we already handled the x-label with ax1
-    ax2.plot(thread_counts, throughputs, color=color, marker='o', label='Throughput')
-    ax2.tick_params(axis='y', labelcolor=color)
+    plt.subplot(2, 1, 2)
+    plt.plot(thread_counts, total_times, 'go-', label='Total Time')
+    plt.xlabel('Number of Threads')
+    plt.ylabel('Total Time (seconds)')
+    plt.title('Total Execution Time')
+    plt.legend()
+    plt.grid(True)
 
-    fig.tight_layout()  # to adjust layout to prevent overlap
-    plt.title("Concurrent HashMap Benchmark")
+    plt.tight_layout()
     plt.show()
 
-
 if __name__ == "__main__":
-    run_benchmark()
+    thread_counts, write_latencies, read_latencies, total_times = run_benchmarks()
+    plot_results(thread_counts, write_latencies, read_latencies, total_times)
