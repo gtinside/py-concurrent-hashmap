@@ -1,2 +1,4 @@
 loguru
 readerwriterlock
+matplotlib
+numpy
